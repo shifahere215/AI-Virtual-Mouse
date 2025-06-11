@@ -3,6 +3,7 @@ import numpy as np
 import HandTrackingModule as htm
 import time
 import autopy
+import pyautogui
 
 ##########################
 wCam, hCam = 640, 480
@@ -22,6 +23,9 @@ clocX, clocY = 0, 0  # Current location of the mouse
 plocX, plocY = 0, 0  # Previous location of the mouse
 
 detector = htm.handDetector(maxHands=1)  # Initialize hand detector
+
+switched = False # Flag to track if the desktop switch has been triggered
+last_switch_time = 0
 
 while True:
      # 1. Find hand Landmarks
@@ -46,7 +50,7 @@ while True:
             # 5. Convert Coordinates
             x3 = np.interp(x1, (frameR, wCam-frameR), (0, wScr))
             y3 = np.interp(y1, (frameR, hCam-frameR), (0, hScr))
-            # Add movement code here if needed
+           
 
             # 6. Smoothen Values
             clocX = plocX + (x3 - plocX) / smoothening
@@ -62,6 +66,32 @@ while True:
 
             cv2.circle(img, (x1, y1), 15, (255, 0, 255), cv2.FILLED)
             plocX, plocY = clocX, clocY
+
+            switched = False  # Reset the flag when hand returns to normal
+
+        # Gesture: Three fingers up = switch virtual desktop
+        # if fingers == [0,1,1,1,0]:  
+        #     # Check if the switch has not been triggered yet
+        #     # Switch Virtual Desktop
+        #     # Check if the switch has not been triggered yet
+        #     if not switched:
+        #         print("Three finger gesture detected — switching desktop!")
+        #         pyautogui.hotkey('ctrl', 'right')
+        #         switched = True
+        #         time.sleep(0.3)
+                # 6. Switch desktops with finger patterns
+        current_time = time.time()
+        if current_time - last_switch_time > 0.5:
+            if fingers == [0, 1, 1, 1, 0]:  # 3 fingers = switch right
+                print("➡️ Switching right")
+                pyautogui.hotkey('ctrl', 'right')
+                last_switch_time = current_time
+
+            elif fingers == [0, 1, 1, 1, 1]:  # 4 fingers = switch left
+                print("⬅️ Switching left")
+                pyautogui.hotkey('ctrl', 'left')
+                last_switch_time = current_time
+
         
         # 8. Both Index and middle fingers are up : Clicking Mode
         if fingers[1] == 1 and fingers[2] == 1:
@@ -84,3 +114,5 @@ while True:
     # 12. Display
     cv2.imshow("Image", img)
     cv2.waitKey(1)
+
+
