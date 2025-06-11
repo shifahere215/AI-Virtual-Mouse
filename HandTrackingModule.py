@@ -29,9 +29,15 @@ class handDetector():
 
 
     def findHands(self, img, draw=True):
+
         imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         self.results = self.hands.process(imgRGB)
         # print(results.multi_hand_landmarks)
+
+        #added self.handtype to store the type of hand detected
+        self.handType = None
+        if self.results.multi_handedness:
+            self.handType = self.results.multi_handedness[0].classification[0].label
 
         if self.results.multi_hand_landmarks:
             for handLms in self.results.multi_hand_landmarks:
@@ -68,26 +74,36 @@ class handDetector():
                               (0, 255, 0), 2)
 
         return self.lmList, bbox
-
+    
     def fingersUp(self):
         fingers = []
+
+        if len(self.lmList) == 0 or self.handType is None:
+            return fingers
+
         # Thumb
-        if self.lmList[self.tipIds[0]][1] > self.lmList[self.tipIds[0] - 1][1]:
-            fingers.append(1)
-        else:
-            fingers.append(0)
+        if self.handType == "Right":
+            if self.lmList[self.tipIds[0]][1] < self.lmList[self.tipIds[0] - 1][1]:
+                fingers.append(1)
+            else:
+                fingers.append(0)
+        else:  # Left hand
+            if self.lmList[self.tipIds[0]][1] > self.lmList[self.tipIds[0] - 1][1]:
+                fingers.append(1)
+            else:
+                fingers.append(0)
 
-        # Fingers
+        # Fingers (index to pinky)
         for id in range(1, 5):
-
             if self.lmList[self.tipIds[id]][2] < self.lmList[self.tipIds[id] - 2][2]:
                 fingers.append(1)
             else:
                 fingers.append(0)
 
-        # totalFingers = fingers.count(1)
-
         return fingers
+    
+    
+
 
     def findDistance(self, p1, p2, img, draw=True,r=15, t=3):
         x1, y1 = self.lmList[p1][1:]
